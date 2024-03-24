@@ -1,59 +1,48 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import Dashboard from 'views/Dashboard';
-import { useContext } from "react";
-
-
-
-import { AccountContext } from "./contextsss/accountprovider.jsx";
 
 const useAnalyticsData = () => {
     const [analyticsData, setAnalyticsData] = useState(null);
     const [error, setError] = useState('');
     const [channelId, setChannelId] = useState('');
-    const {setPerson} = useContext(AccountContext);
 
     const fetchAnalyticsData = async (channelId) => {
         try {
             const response = await axios.get(`http://localhost:5000/channel/${channelId}`);
-            setAnalyticsData(response.data);
-            setPerson(response.data);
+            const data = response.data;
+            setAnalyticsData(data);
             setError('');
+            // Store data in local storage
+            localStorage.setItem('analyticsData', JSON.stringify(data));
         } catch (error) {
             setError('Error retrieving channel analytics');
             setAnalyticsData(null);
         }
     };
 
-    useEffect(() => {
-        fetchAnalyticsData(channelId);
-    }, [channelId]);
-
     const handleInputChange = (e) => {
         setChannelId(e.target.value);
     };
+    
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (channelId.trim() !== '') {
+            await fetchAnalyticsData(channelId);
+        } else {
+            setError('Please enter a YouTube Channel ID');
+        }
+    };
 
-    return { analyticsData, error, fetchAnalyticsData, handleInputChange };
+    return { analyticsData, error, fetchAnalyticsData, handleInputChange, handleSubmit };
 };
 
-
 const App = () => {
-    const [channelId, setChannelId] = useState('');
-    const { analyticsData, error, fetchAnalyticsData } = useAnalyticsData();
-
-    const handleInputChange = (e) => {
-        setChannelId(e.target.value);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        fetchAnalyticsData(channelId);
-    };
+    const { analyticsData, error, handleInputChange, handleSubmit } = useAnalyticsData();
 
     return (
         <div>
             <form onSubmit={handleSubmit}>
-                <input type="text" placeholder="Enter YouTube Channel ID" value={channelId} onChange={handleInputChange} />
+                <input type="text" placeholder="Enter YouTube Channel ID" onChange={handleInputChange} />
                 <button type="submit">Get Analytics</button>
             </form>
             {error && <p>{error}</p>}
@@ -68,4 +57,4 @@ const App = () => {
 };
 
 export default App;
-export { useAnalyticsData }; 
+export { useAnalyticsData };
